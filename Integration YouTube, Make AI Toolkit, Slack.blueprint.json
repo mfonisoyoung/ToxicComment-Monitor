@@ -1,0 +1,340 @@
+{
+    "name": "Integration YouTube, Make AI Toolkit, Slack",
+    "flow": [
+        {
+            "id": 1,
+            "module": "youtube:watchNewComments",
+            "version": 4,
+            "parameters": {
+                "__IMTCONN__": 7065897,
+                "watchCommentsIn": "channel",
+                "moderationStatus": "published",
+                "search": "",
+                "limit": 1,
+                "channelId": "UCOj2mXnGW5bE2TlmcEMDFmQ"
+            },
+            "mapper": {},
+            "metadata": {
+                "designer": {
+                    "x": 0,
+                    "y": 0
+                },
+                "restore": {
+                    "parameters": {
+                        "__IMTCONN__": {
+                            "label": "My YouTube connection (Mfoniso Young <mfonisoyoung@gmail.com>)",
+                            "data": {
+                                "scoped": "true",
+                                "connection": "youtube"
+                            }
+                        },
+                        "watchCommentsIn": {
+                            "label": "Channel"
+                        },
+                        "moderationStatus": {
+                            "label": "Published"
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "__IMTCONN__",
+                        "type": "account:youtube",
+                        "label": "Connection",
+                        "required": true
+                    },
+                    {
+                        "name": "watchCommentsIn",
+                        "type": "select",
+                        "label": "Watch Comments in",
+                        "required": true,
+                        "validate": {
+                            "enum": [
+                                "video",
+                                "channel"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "moderationStatus",
+                        "type": "select",
+                        "label": "Moderation Status",
+                        "validate": {
+                            "enum": [
+                                "published",
+                                "heldForReview",
+                                "likelySpam"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "type": "text",
+                        "label": "Search Terms"
+                    },
+                    {
+                        "name": "limit",
+                        "type": "uinteger",
+                        "label": "Limit",
+                        "required": true
+                    },
+                    {
+                        "name": "channelId",
+                        "type": "text",
+                        "label": "Channel ID",
+                        "required": true
+                    }
+                ]
+            }
+        },
+        {
+            "id": 2,
+            "module": "ai-tools:AnalyzeSentiment",
+            "version": 2,
+            "parameters": {
+                "makeConnectionId": 6885062,
+                "model": "small"
+            },
+            "mapper": {
+                "input": "You are going to be a social media monitoring. Your task is to please analyze a YouTube comment of {{1.textOriginal}}and classify it for moderation purposes.\r\n\r\nYou must evaluate the comment based on sentiment, toxicity, and spam.\r\n\nRULES:\r\n- Do NOT delete anything yourself\r\n- Only flag comments that are clearly harmful, abusive, or spam\r\n\r\nCLASSIFICATIONS:\r\n1. POSITIVE\r\n- Supportive, friendly, encouraging\r\n2. NEUTRAL\r\n- Informational or general discussion\r\n- No strong emotion\r\n3. NEGATIVE (NON-TOXIC)\r\n- Criticism or disagreement but respectful\r\n- Do NOT flag for removal\r\n4. TOXIC / FLAG FOR REVIEW\r\n- Insults, hate speech, harassment\r\n- Threats or abusive language\r\n- Spam or scam content\r\n- Repeated unwanted promotion\r\n\nACTION RULES:\r\n- POSITIVE - ignore\r\n- NEUTRAL - ignore\r\n- NEGATIVE  - flag for review\r\n\r\nSCORING:\r\n- Positive = 0–30\r\n- Neutral = 30–50\r\n- Negative = 50–75\r\n- Toxic = 75–100",
+                "shouldGenerateDescription": true
+            },
+            "metadata": {
+                "designer": {
+                    "x": 300,
+                    "y": 0
+                },
+                "restore": {
+                    "parameters": {
+                        "makeConnectionId": {
+                            "label": " Make's AI Provider connection",
+                            "data": {
+                                "scoped": "true",
+                                "connection": "ai-provider"
+                            }
+                        },
+                        "model": {
+                            "mode": "chose",
+                            "nested": [],
+                            "label": "SmallModel: gpt-5-nano. Reasoning: low. Efficiently handles long conversations and reasoning, delivering smart conclusions quickly"
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "makeConnectionId",
+                        "type": "account:ai-provider,openai-gpt-3,anthropic-claude,gemini-ai-q9zyjp,ai-agent-foundry-openai,ai-agent-foundry-non-openai,mistral-ai,cohere,groq,ai-agent-xai,amazon-bedrock,ai-agent-openai-compatible",
+                        "label": "Connection",
+                        "required": true
+                    },
+                    {
+                        "name": "model",
+                        "type": "select",
+                        "label": "Model",
+                        "required": true
+                    }
+                ],
+                "expect": [
+                    {
+                        "name": "input",
+                        "type": "text",
+                        "label": "Text to analyze",
+                        "required": true
+                    },
+                    {
+                        "name": "shouldGenerateDescription",
+                        "type": "boolean",
+                        "label": "Return a description of the sentiment",
+                        "required": true
+                    }
+                ]
+            }
+        },
+        {
+            "id": 3,
+            "module": "slack:CreateMessage",
+            "version": 4,
+            "parameters": {
+                "__IMTCONN__": 6859317
+            },
+            "mapper": {
+                "channelWType": "list",
+                "text": "{{2.description}}\n{{2.sentiment}}",
+                "parse": false,
+                "mrkdwn": true,
+                "channelType": "public",
+                "channel": "C0AUH0GCTNH"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 600,
+                    "y": 0
+                },
+                "restore": {
+                    "parameters": {
+                        "__IMTCONN__": {
+                            "label": "Slack Connection (clientfeedbackform.slack.com - make)",
+                            "data": {
+                                "scoped": "true",
+                                "connection": "slack3"
+                            }
+                        }
+                    },
+                    "expect": {
+                        "channelWType": {
+                            "label": "Select from the list"
+                        },
+                        "reply_broadcast": {
+                            "mode": "chose"
+                        },
+                        "link_names": {
+                            "mode": "chose"
+                        },
+                        "parse": {
+                            "mode": "chose"
+                        },
+                        "mrkdwn": {
+                            "mode": "chose"
+                        },
+                        "unfurl_links": {
+                            "mode": "chose"
+                        },
+                        "unfurl_media": {
+                            "mode": "chose"
+                        },
+                        "channelType": {
+                            "label": "Public channel"
+                        },
+                        "channel": {
+                            "mode": "chose",
+                            "label": "all-client-feedback-form"
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "__IMTCONN__",
+                        "type": "account:slack2,slack3",
+                        "label": "Connection",
+                        "required": true
+                    }
+                ],
+                "expect": [
+                    {
+                        "name": "channelWType",
+                        "type": "select",
+                        "label": "Enter a channel ID or name",
+                        "required": true,
+                        "validate": {
+                            "enum": [
+                                "manualy",
+                                "list"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "text",
+                        "type": "text",
+                        "label": "Text"
+                    },
+                    {
+                        "name": "blocks",
+                        "type": "text",
+                        "label": "Blocks"
+                    },
+                    {
+                        "name": "thread_ts",
+                        "type": "text",
+                        "label": "Thread message ID (time stamp)"
+                    },
+                    {
+                        "name": "reply_broadcast",
+                        "type": "boolean",
+                        "label": "Reply broadcast"
+                    },
+                    {
+                        "name": "link_names",
+                        "type": "boolean",
+                        "label": "Link names"
+                    },
+                    {
+                        "name": "parse",
+                        "type": "boolean",
+                        "label": "Parse message text"
+                    },
+                    {
+                        "name": "mrkdwn",
+                        "type": "boolean",
+                        "label": "Use markdown"
+                    },
+                    {
+                        "name": "unfurl_links",
+                        "type": "boolean",
+                        "label": "Unfurl primarily text-based content"
+                    },
+                    {
+                        "name": "unfurl_media",
+                        "type": "boolean",
+                        "label": "Unfurl media content"
+                    },
+                    {
+                        "name": "icon_emoji",
+                        "type": "text",
+                        "label": "Icon emoji"
+                    },
+                    {
+                        "name": "icon_url",
+                        "type": "url",
+                        "label": "Icon url"
+                    },
+                    {
+                        "name": "username",
+                        "type": "text",
+                        "label": "User name"
+                    },
+                    {
+                        "name": "channelType",
+                        "type": "select",
+                        "label": "Channel type",
+                        "required": true,
+                        "validate": {
+                            "enum": [
+                                "public",
+                                "private",
+                                "im",
+                                "mpim"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "channel",
+                        "type": "select",
+                        "label": "Public channel",
+                        "required": true
+                    }
+                ]
+            }
+        }
+    ],
+    "metadata": {
+        "instant": false,
+        "version": 1,
+        "scenario": {
+            "roundtrips": 1,
+            "maxErrors": 3,
+            "autoCommit": true,
+            "autoCommitTriggerLast": true,
+            "sequential": false,
+            "slots": null,
+            "confidential": false,
+            "dataloss": false,
+            "dlq": false,
+            "freshVariables": false
+        },
+        "designer": {
+            "orphans": []
+        },
+        "zone": "eu1.make.com",
+        "notes": []
+    }
+}
